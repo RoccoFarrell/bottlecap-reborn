@@ -1,8 +1,26 @@
 from PIL import Image
+import numpy as np
+from sklearn import cluster
+import scipy.misc as FILE
+import matplotlib.pyplot as plt
+from skimage import color
+import time
 
-im = Image.open("mario.png")
-px = im.load()
-#im.rotate(45).show()
+#############################################
+#Function Defs
+#############################################
+def quantize(raster, n_colors):
+    width, height, depth = raster.shape
+    reshaped_raster = np.reshape(raster, (width * height, depth))
+
+    model = cluster.KMeans(n_clusters=n_colors)
+    labels = model.fit_predict(reshaped_raster)
+    palette = model.cluster_centers_
+
+    quantized_raster = np.reshape(
+        palette[labels], (width, height, palette.shape[1]))
+
+    return quantized_raster
 
 def rgb2hex(rgb):
     r,g,b = rgb
@@ -37,47 +55,118 @@ def set_color_square(color, starting_x, starting_y, boxWidth, boxHeight):
 
 	return color
 
+def get_color_list():
+	"Returns a list of every hex color in the picture"
+	
+	colorlist = []
+	for w_px in range(1, width):
+		for h_px in range(1, height):
+
+			#Get list of colors in original image
+			rgb = px[w_px,h_px]
+			#hexvalue = rgb2hex((px[w_px,h_px]))
+			if(rgb not in colorlist):
+				colorlist.append(rgb)
+				#print(len(colorlist))
+
+	return colorlist
+
+def find_closest_color(inputcolor, colorlist):
+	"Takes in a source color, and a color list, and returns the closest color from the list"
+
+	#print(inputcolor, colorlist)
+
+	r1,g1,b1 = inputcolor
+	outputcolor = (0,0,0)
+
+	distance = 1000000
+	for color in colorlist:
+		r2,g2,b2 = color
+
+		distance_new = float((r1-r2)**2 + (g1-g2)**2 + (b1-b2)**2)**(1/2.0)
+		#print(distance_new)
+		#print(r1,r2,g1,g2,b1,b2)
+
+		if(distance_new < distance):
+			distance = distance_new
+			outputcolor = color
+
+	return outputcolor
+
+#############################################
+#Main Program
+#############################################
+num_colors = 16
+
+raster = FILE.imread("images/kobe-mean-face.png")
+print("read complete")
+
+lab_raster = color.rgb2lab(raster)
+print("rgb2lab complete")
+
+start_time = time.time()
+output_raster = quantize(lab_raster, num_colors)
+print("quantization complete")
+print("Quantization took ", (time.time() - start_time))
+
+rgb_raster = (color.lab2rgb(output_raster) * 255).astype('uint8')
+print("lab2rgb complete")
+
+FILE.imsave('images/quantized.png', rgb_raster)
+print("output complete")
+
+#plt.imshow(rgb_raster / 255.0)
+#plt.draw()
+#plt.show()
+
+im = Image.open("images/quantized.png")
+px = im.load()
+
+#get W and H
 width, height = im.size
-print(width,height)
-print(im.mode)
-
-im_out = Image.new("RGB", (width, height))
-#im_out.save("out.png")
-
-px_out = im_out.load()
+print("Size of original: ", width, "x", height)
+print("Color mode of original:", im.mode)
 
 #userWidth = input("Width of canvas in Inches: ")
 userWidth = 5
 #userHeight = input("Height of canvas in Inches: ")
 userHeight = 5
 
-boxWidth = 50
-boxHeight = 50
+#Size of sampling box in pixels
+boxWidth = boxHeight = 10
 
+#Find number of loops, and the remainder
 width_loops = width / boxWidth
 width_remainder = width % boxWidth
 height_loops = height / boxHeight
 height_remainder = height % boxHeight
 
-print(width_loops, height_loops, width_remainder, height_remainder)
+#print(width_loops, width_remainder, height_loops, height_remainder)
 
-colorlist = []
-for w_px in range(int(width_remainder / 2), width,boxWidth):
-    for h_px in range(int(height_remainder / 2), height, boxHeight):
-        #print(px[w_px,h_px])
-        if(w_px + boxWidth < width and h_px + boxHeight < height):
-	        print("At w: ", w_px, " h: ", h_px)
-	        avg_color = get_average_color_square(w_px,h_px,boxWidth,boxHeight)
-	        print("Avg color: ", avg_color)
+im_out = Image.new("RGB", (int(width_loops * boxWidth), int(height_loops * boxHeight)))
+px_out = im_out.load()
 
-	        set_color_square(avg_color, w_px, h_px, boxWidth, boxHeight)
+#print((int(width_loops * boxWidth), int(height_loops * boxHeight)))
+#print(width_loops, height_loops, width_remainder, height_remainder)
 
-	        rgb = px[w_px,h_px]
-	        hexvalue = rgb2hex((px[w_px,h_px]))
-	        if(hexvalue not in colorlist):
-	            colorlist.append(hexvalue)
+colorlist = get_color_list()
 
-    #print()
-print (colorlist)
+for w_px in range(int(width_remainder / 2), width, boxWidth):
+	for h_px in range(int(height_remainder / 2), height, boxHeight):
+		#print(px[w_px,h_px])
+		if(w_px + boxWidth < width + 1 and h_px + boxHeight < height + 1):
+	        #print("At w: ", w_px, " h: ", h_px)
 
-im_out.save("out.png")
+	        #Get average color of a square
+			avg_color = get_average_color_square(w_px,h_px,boxWidth,boxHeight)
+			#Find closest color
+			set_color = find_closest_color(avg_color, colorlist)
+			#Set square to that color
+			set_color_square(set_color, w_px, h_px, boxWidth, boxHeight)
+	
+		#else:
+			#print("skipping box at ", w_px, h_px, "due to equation")
+
+print(colorlist)
+
+im_out.save("images/out.png")
