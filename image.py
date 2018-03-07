@@ -2,6 +2,7 @@ from PIL import Image
 import numpy as np
 from sklearn import cluster
 import scipy.misc as FILE
+import imageio
 import matplotlib.pyplot as plt
 from skimage import color
 import time
@@ -51,7 +52,13 @@ def set_color_square(color, starting_x, starting_y, boxWidth, boxHeight):
 	for w_px in range(starting_x, starting_x + boxWidth):
 		for h_px in range(starting_y, starting_y + boxHeight):
 
-			px_out[w_px, h_px] = color
+			try:
+				px_out[w_px, h_px] = color
+			except IndexError:
+				print("Error, tried to set color of non-existent pixel")
+				print("w: ", int(width_loops * boxWidth), "h: ", int(height_loops * boxHeight))
+				print("w_px: ", w_px, "h_px: ", h_px)
+				break
 
 	return color
 
@@ -98,8 +105,19 @@ def find_closest_color(inputcolor, colorlist):
 #############################################
 num_colors = 16
 
-raster = FILE.imread("images/kobe-mean-face.png")
+raster = FILE.imread("images/redsox.png", mode='RGB')
 print("read complete")
+#print(type(raster))
+#print(raster.shape)
+
+#raster2 = imageio.imread('images/tux.png')
+#print(type(raster2))
+#print(raster2.shape)
+
+#w_in, h_in, depth_in = raster.shape
+
+#if(depth_in == 4):
+#	raster = np.reshape(raster, (w_in, h_in, 3))
 
 lab_raster = color.rgb2lab(raster)
 print("rgb2lab complete")
@@ -133,13 +151,19 @@ userWidth = 5
 userHeight = 5
 
 #Size of sampling box in pixels
-boxWidth = boxHeight = 10
+boxWidth = boxHeight = 50
 
 #Find number of loops, and the remainder
-width_loops = width / boxWidth
+width_loops = int(width / boxWidth)
 width_remainder = width % boxWidth
-height_loops = height / boxHeight
+height_loops = int(height / boxHeight)
 height_remainder = height % boxHeight
+
+print("Total caps: ", width_loops * height_loops)
+print("Caps across: ", width_loops)
+print("Caps top to bottom: ", height_loops)
+print("Projected actual width: ", (width_loops * 1.17)/12, "ft")
+print("Projected actual height: ", (height_loops * 1.17)/12, "ft")
 
 #print(width_loops, width_remainder, height_loops, height_remainder)
 
@@ -154,7 +178,7 @@ colorlist = get_color_list()
 for w_px in range(int(width_remainder / 2), width, boxWidth):
 	for h_px in range(int(height_remainder / 2), height, boxHeight):
 		#print(px[w_px,h_px])
-		if(w_px + boxWidth < width + 1 and h_px + boxHeight < height + 1):
+		if(w_px + boxWidth < int(width_loops * boxWidth) + 1 and h_px + boxHeight < int(height_loops * boxHeight) + 1):
 	        #print("At w: ", w_px, " h: ", h_px)
 
 	        #Get average color of a square
@@ -167,6 +191,6 @@ for w_px in range(int(width_remainder / 2), width, boxWidth):
 		#else:
 			#print("skipping box at ", w_px, h_px, "due to equation")
 
-print(colorlist)
+#print(colorlist)
 
 im_out.save("images/out.png")
