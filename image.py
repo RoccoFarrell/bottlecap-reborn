@@ -103,9 +103,11 @@ def find_closest_color(inputcolor, colorlist):
 #############################################
 #Main Program
 #############################################
-num_colors = 16
+num_colors = 5
 
-raster = FILE.imread("images/redsox.png", mode='RGB')
+infile = "images/danface.png"
+
+raster = FILE.imread(infile, mode='RGB')
 print("read complete")
 #print(type(raster))
 #print(raster.shape)
@@ -151,7 +153,7 @@ userWidth = 5
 userHeight = 5
 
 #Size of sampling box in pixels
-boxWidth = boxHeight = 50
+boxWidth = boxHeight = 15
 
 #Find number of loops, and the remainder
 width_loops = int(width / boxWidth)
