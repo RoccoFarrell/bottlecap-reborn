@@ -105,7 +105,9 @@ def find_closest_color(inputcolor, colorlist):
 #############################################
 num_colors = 5
 
-infile = "images/danface.png"
+img_dir = "../../images/"
+infile = img_dir + "mattface.png"
+
 
 raster = FILE.imread(infile, mode='RGB')
 print("read complete")
@@ -132,14 +134,14 @@ print("Quantization took ", (time.time() - start_time))
 rgb_raster = (color.lab2rgb(output_raster) * 255).astype('uint8')
 print("lab2rgb complete")
 
-FILE.imsave('images/quantized.png', rgb_raster)
+FILE.imsave(img_dir + 'quantized.png', rgb_raster)
 print("output complete")
 
 #plt.imshow(rgb_raster / 255.0)
 #plt.draw()
 #plt.show()
 
-im = Image.open("images/quantized.png")
+im = Image.open(img_dir + 'quantized.png')
 px = im.load()
 
 #get W and H
@@ -195,4 +197,6 @@ for w_px in range(int(width_remainder / 2), width, boxWidth):
 
 #print(colorlist)
 
-im_out.save("images/out.png")
+im_out.save(img_dir + "out.png")
+
+print("done")
