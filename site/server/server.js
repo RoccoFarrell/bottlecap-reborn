@@ -1,5 +1,8 @@
 'use strict';
 
+const process = require('process')
+
+
 var mysql = require('mysql');
 const express = require('express'),
 	app = express(),
@@ -24,17 +27,12 @@ let runPy = new Promise(function(success, nosuccess) {
     });
 });
 
-app.get('/', (req, res) => {
-
-    res.write('welcome\n');
-
-    runPy.then(function(fromRunpy) {
-        console.log(fromRunpy.toString());
-        res.end(fromRunpy);
-    });
-})
-
 const cors = require('cors')
+const GCLOUD_STORAGE_BUCKET = "capcollage"
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(cors())
 
 //Mongoose config
 /*
@@ -49,13 +47,65 @@ mongoose.connect('mongodb://localhost/apps',{
 
 //-------------------------------
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-app.use(cors())
+const Storage = require('@google-cloud/storage')
+
+const storage = Storage();
+app.set('view engine', 'pug');
+
+const multer = Multer({
+	storage: Multer.memoryStorage(),
+	limits: {
+		fileSize: 5 * 1024 * 1024
+	}
+})
+
+const bucket = storage.bucket(GCLOUD_STORAGE_BUCKET);
+
+app.get('/', (req, res) => {
+  res.render('form.pug');
+});
+
+app.post('/upload', multer.single('file'), (req, res, next) => {
+  if (!req.file) {
+    res.status(400).send('No file uploaded.');
+    return;
+  }
+
+  // Create a new blob in the bucket and upload the file data.
+  const blob = bucket.file(req.file.originalname);
+  const blobStream = blob.createWriteStream();
+
+  blobStream.on('error', (err) => {
+    next(err);
+  });
+
+  blobStream.on('finish', () => {
+    // The public URL can be used to directly access the file via HTTP.
+    const publicUrl = format(`https://storage.googleapis.com/${bucket.name}/${blob.name}`);
+    res.status(200).send(publicUrl);
+  });
+
+  blobStream.end(req.file.buffer);
+});
+
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`App listening on port ${PORT}`);
+  console.log('Press Ctrl+C to quit.');
+});
+
+/*
+app.get('/', (req, res) => {
+
+    res.write('welcome\n');
+
+    runPy.then(function(fromRunpy) {
+        console.log(fromRunpy.toString());
+        res.end(fromRunpy);
+    });
+})
+*/
 
 //var routes = require('./api/routes/appRoutes');
 //routes(app);
 
-app.listen(port);
-
-console.log('RESTful API online at ' + port);
