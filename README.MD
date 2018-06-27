@@ -13,4 +13,8 @@ Python 3.6
 
 I would just run `pip install` for any errors you get of failed packages
 
-Type `python image.py` to run, and change the line `raster = FILE.imread("images/<YOUR FILE HERE>")` to change which file is transformed
+##To Use
+Copy your original image to the `images` folder in the project
+Open `image.py` and change the line `infile = img_dir + "corey.png"` to change which file is transformed
+You can also modify `num_colors` and `boxWidth = boxHeight = <x>` to play with the number of colors in the image, and the size of the pixels in the output image
+Navigate to the root directory and run `python image.py` to process the image that you specified above
