@@ -108,8 +108,8 @@ num_colors = 15
 #Size of sampling box in pixels
 boxWidth = boxHeight = 4
 
-img_dir = "./images/"
-infile = img_dir + "corey.png"
+img_dir = "../images/"
+infile = img_dir + "lenna.png"
 
 raster = FILE.imread(infile, mode='RGB')
 print("read complete")
